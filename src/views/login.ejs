@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion</title>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 300px;
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+input {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+button {
+    background-color: #5C6BC0;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #3F51B5;
+}
+.messageBox {
+    margin-top: 10px;
+    font-weight: bold;
+}    </style>
+</head>
+<body>
+    <form id="loginForm">
+        <h2>Connexion</h2>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+        <div id="messageBox"></div>
+    </form>
+
+    <script>
+        // Ajoutez votre JavaScript ici
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const messageBox = document.getElementById('messageBox');
+
+    fetch('http://localhost:3000/api/users/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de la connexion');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data);
+        messageBox.innerHTML = 'Connexion réussie ! Redirection...';
+        messageBox.style.color = 'green';
+
+        // Redirect to another page after a short delay
+        setTimeout(() => {
+            window.location.href = '/api/views/chat'; // Adjust the URL to your login page
+        }, 3000); // 3000 milliseconds delay for redirection
+    })
+    .catch((error) => {
+        console.error('Erreur:', error);
+        messageBox.innerHTML = error.message;
+        messageBox.style.color = 'red';
+    });
+});
+
+    </script>
+</body>
+</html>
