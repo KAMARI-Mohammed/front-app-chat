@@ -13,28 +13,51 @@ exports.register = async (req, res) => {
   }
 };
 
+  //req.session.username = user.username;
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (user) {
-      // Ici, user est une instance de document Mongoose et peut utiliser comparePassword
-      const isMatch = await user.comparePassword(password);
-      // ...
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(401).json({ message: "Identifiants incorrects" });
+        }
+
+        //const isMatch = await bcrypt.compare(password, user.password);
+
+        /*if (!isMatch) {
+            return res.status(401).json({ message: "Identifiants incorrects" });
+        }*/
+
+        // Génération d'un token JWT si vous utilisez une authentification basée sur les tokens
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.json({
+          
+            message: "Connexion réussie",
+            user: {
+                username: user.username,
+                // Autres informations utilisateur nécessaires
+            },
+            token // Si vous utilisez JWT
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur serveur" });
     }
-    else{
-      return res.status(401).json({ message: "Email ou mot de passe incorrect" });
-    }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: "Connexion réussie", token });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Erreur lors de la connexion", error: error.message });
-  }
 };
 
 exports.logout = (req, res) => {
   // La déconnexion est généralement gérée côté client en supprimant le token JWT
   res.status(200).json({ message: "Déconnexion réussie" });
+};
+
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}); // Récupère tous les utilisateurs
+    res.json(users);
+} catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+}
 };

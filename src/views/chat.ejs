@@ -69,10 +69,14 @@
 </head>
 <body>
     <div id="chatContainer">
+
         <div id="userList">
+            <div>Bienvenue, <span id="usernameDisplay"></span>!</div>
+
             <!-- Liste des utilisateurs -->
             <p>User 1</p>
             <p>User 2</p>
+           
             <!-- Ajoutez plus d'utilisateurs ici -->
         </div>
         <div id="chatBox">
@@ -86,5 +90,25 @@
             <button id="sendButton">Envoyer</button>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const username = localStorage.getItem('username');
+    if (username) {
+        document.getElementById('usernameDisplay').innerText = username;
+    }
+    fetch('http://localhost:3000/api/users/getUsers')
+        .then(response => response.json())
+        .then(users => {
+            const userListElement = document.getElementById('userList');
+            users.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.innerText = user.username; // Assurez-vous que 'username' est la propriété correcte
+                userListElement.appendChild(userElement);
+            });
+        })
+        .catch(error => console.error('Erreur:', error));
+});
+    </script>
 </body>
 </html>

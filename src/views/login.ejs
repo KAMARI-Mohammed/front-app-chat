@@ -65,6 +65,7 @@ button:hover {
         <button type="submit">Se connecter</button>
         <div id="messageBox"></div>
     </form>
+    <div id="usernameDisplay"></div>
 
     <script>
         // Ajoutez votre JavaScript ici
@@ -92,12 +93,19 @@ button:hover {
         console.log(data);
         messageBox.innerHTML = 'Connexion réussie ! Redirection...';
         messageBox.style.color = 'green';
+        if (data.user && data.user.username) {
+            // Affichez les informations de l'utilisateur
+           document.getElementById('usernameDisplay').innerText = data.user.username;
+            // Redirection ou affichage de la page principale
+        }
+        localStorage.setItem('username', data.user.username);
 
         // Redirect to another page after a short delay
         setTimeout(() => {
             window.location.href = '/api/views/chat'; // Adjust the URL to your login page
         }, 3000); // 3000 milliseconds delay for redirection
     })
+
     .catch((error) => {
         console.error('Erreur:', error);
         messageBox.innerHTML = error.message;
