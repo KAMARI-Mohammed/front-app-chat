@@ -90,6 +90,9 @@ button:hover {
         return response.json();
     })
     .then(data => {
+        if (data.token) {
+        localStorage.setItem('jwtToken', data.token); // Stocker le token JWT pour une utilisation ultérieure
+        }
         console.log(data);
         messageBox.innerHTML = 'Connexion réussie ! Redirection...';
         messageBox.style.color = 'green';

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat Application</title>
-    <link rel="stylesheet" href="../css/style.css"> <!-- Assurez-vous que le chemin vers votre fichier CSS est correct -->
     <style>
         #chatContainer {
     display: flex;
@@ -70,15 +69,15 @@
 <body>
     <div id="chatContainer">
 
-        <div id="userList">
-            <div>Bienvenue, <span id="usernameDisplay"></span>!</div>
+        <!-- Élément pour afficher le nom de l'utilisateur connecté -->
+    <div id="usernameDisplay"></div>
 
-            <!-- Liste des utilisateurs -->
-            <p>User 1</p>
-            <p>User 2</p>
-           
-            <!-- Ajoutez plus d'utilisateurs ici -->
-        </div>
+    <!-- Conteneur pour la liste des utilisateurs -->
+    <div id="userList">
+        <h3>Utilisateurs en ligne:</h3>
+        <!-- Les utilisateurs seront ajoutés ici par le script JavaScript -->
+    </div>
+        
         <div id="chatBox">
             <!-- Messages seront affichés ici -->
             <div class="message sent">Hello!</div>
@@ -97,18 +96,31 @@
     if (username) {
         document.getElementById('usernameDisplay').innerText = username;
     }
-    fetch('http://localhost:3000/api/users/getUsers')
+    const token = localStorage.getItem('JWT_SECRET'); // Remplacez 'jwtToken' par la clé réelle utilisée pour stocker le token
+    if(token){
+    fetch('http://localhost:3000/api/users/getUsers',{
+        headers: {
+            'Authorization': 'Bearer ' + token // Assurez-vous d'inclure le JWT
+        }
+        
+    })
         .then(response => response.json())
         .then(users => {
+            console.log(users); // Inspectez ce que vous recevez ici
             const userListElement = document.getElementById('userList');
-            users.forEach(user => {
-                const userElement = document.createElement('div');
-                userElement.innerText = user.username; // Assurez-vous que 'username' est la propriété correcte
-                userListElement.appendChild(userElement);
+      
+        users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.innerText = user.username;
+            userListElement.appendChild(userElement);
             });
         })
+        
         .catch(error => console.error('Erreur:', error));
+}
 });
+
+
     </script>
 </body>
 </html>

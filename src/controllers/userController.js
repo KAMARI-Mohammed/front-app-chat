@@ -2,6 +2,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+
 exports.register = async (req, res) => {
   try {
     console.log(req.body); // Ajoutez cette ligne pour le debugging
@@ -55,9 +56,14 @@ exports.logout = (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find({}); // Récupère tous les utilisateurs
-    res.json(users);
-} catch (error) {
-    res.status(500).json({ message: "Erreur serveur" });
-}
+      const userId = req.user._id; // Assumant que authenticateToken définit req.user
+      const users = await User.find({ _id: { $ne: userId }}).select('username');
+      res.json(users);
+  } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs:', error);
+      res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
 };
+
+
+
