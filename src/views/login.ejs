@@ -85,33 +85,25 @@ button:hover {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Échec de la connexion');
+            return response.json().then(err => { throw new Error(err.message || 'Échec de la connexion'); });
         }
         return response.json();
     })
     .then(data => {
         if (data.token) {
-        localStorage.setItem('jwtToken', data.token); // Stocker le token JWT pour une utilisation ultérieure
-        }
-        console.log(data);
-        messageBox.innerHTML = 'Connexion réussie ! Redirection...';
-        messageBox.style.color = 'green';
-        if (data.user && data.user.username) {
-            // Affichez les informations de l'utilisateur
-           document.getElementById('usernameDisplay').innerText = data.user.username;
-            // Redirection ou affichage de la page principale
-        }
-        localStorage.setItem('username', data.user.username);
+            localStorage.setItem('jwtToken', data.token); // Correctly store the token
+            localStorage.setItem('username', data.user.username); // Store username
+            messageBox.innerHTML = 'Connexion réussie ! Redirection...';
+            messageBox.style.color = 'green';
 
-        // Redirect to another page after a short delay
-        setTimeout(() => {
-            window.location.href = '/api/views/chat'; // Adjust the URL to your login page
-        }, 3000); // 3000 milliseconds delay for redirection
+            setTimeout(() => {
+                window.location.href = '/api/views/chat'; // Redirect after successful login
+            }, 3000);
+        }
     })
-
     .catch((error) => {
         console.error('Erreur:', error);
-        messageBox.innerHTML = error.message;
+        messageBox.innerHTML = error.message || 'Erreur de connexion';
         messageBox.style.color = 'red';
     });
 });

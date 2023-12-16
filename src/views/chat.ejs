@@ -92,35 +92,47 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-    const username = localStorage.getItem('username');
-    if (username) {
-        document.getElementById('usernameDisplay').innerText = username;
-    }
-    const token = localStorage.getItem('JWT_SECRET'); // Remplacez 'jwtToken' par la clé réelle utilisée pour stocker le token
-    if(token){
-    fetch('http://localhost:3000/api/users/getUsers',{
-        headers: {
-            'Authorization': 'Bearer ' + token // Assurez-vous d'inclure le JWT
-        }
-        
-    })
-        .then(response => response.json())
-        .then(users => {
-            console.log(users); // Inspectez ce que vous recevez ici
-            const userListElement = document.getElementById('userList');
-      
-        users.forEach(user => {
-            const userElement = document.createElement('div');
-            userElement.innerText = user.username;
-            userListElement.appendChild(userElement);
-            });
-        })
-        
-        .catch(error => console.error('Erreur:', error));
-}
-});
-
-
+            const username = localStorage.getItem('username');
+            if (username) {
+                document.getElementById('usernameDisplay').innerText = username;
+            }
+    
+            const token = localStorage.getItem('jwtToken'); // Assurez-vous que c'est le bon nom de clé
+            if (token) {
+                fetch('http://localhost:3000/api/users/getUsers', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token ,// Inclure le JWT
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Échec de la requête: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Inspecter la réponse
+    
+                    // Vérifier si la réponse est un tableau
+                    if (Array.isArray(data)) {
+                        const userListElement = document.getElementById('userList');
+                        data.forEach(user => {
+                            const userElement = document.createElement('div');
+                            userElement.innerText = user.username;
+                            userListElement.appendChild(userElement);
+                        });
+                    } else {
+                        console.error('La réponse n\'est pas un tableau:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                });
+            }
+        });
     </script>
+    
 </body>
 </html>
