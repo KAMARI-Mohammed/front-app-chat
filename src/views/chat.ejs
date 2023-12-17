@@ -39,7 +39,7 @@
     background-color: #f0f4c3;
 }
 
-#messageInput {
+#messageInpu {
     width: 20%;
     display: flex;
     align-items: center;
@@ -64,6 +64,8 @@
     background-color: #45a049;
 }
 
+
+
     </style>
 </head>
 <body>
@@ -80,58 +82,132 @@
         
         <div id="chatBox">
             <!-- Messages seront affichés ici -->
+            <div id="messageList">Messages chargés ici...</div>
             <div class="message sent">Hello!</div>
             <div class="message received">Hi there!</div>
             <!-- Plus de messages -->
         </div>
-        <div id="messageInput">
-            <input type="text" id="messageText" placeholder="Tapez votre message">
-            <button id="sendButton">Envoyer</button>
+        <div id="messageInpu">
+            <form onsubmit="sendMessage(); return false;">
+                <input type="text" id="messageInput" />
+                <button id="sendButton" type="submit">Envoyer</button>
+            </form>
+            
+            
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const username = localStorage.getItem('username');
-            if (username) {
-                document.getElementById('usernameDisplay').innerText = username;
-            }
+        function setupMessagePolling(token) {
+    setInterval(() => {
+        loadMessages(token);
+    }, 3000); // Met à jour les messages toutes les 3 secondes
+}
+     document.addEventListener('DOMContentLoaded', () => {
+    const username = localStorage.getItem('username');
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('jwtToken');
+
+    if (!userId || !token) {
+        console.error('UserId ou token est null');
+        // Redirigez vers la page de connexion si l'utilisateur n'est pas authentifié
+        window.location.href = '/api/views/login';
+        return;
+    }
+    loadUsers(token);
+    loadMessages(token);
+    setupMessagePolling(token); // Démarre le polling
+    if (username) {
+        document.getElementById('usernameDisplay').innerText = username;
+    }
+
     
-            const token = localStorage.getItem('jwtToken'); // Assurez-vous que c'est le bon nom de clé
-            if (token) {
-                fetch('http://localhost:3000/api/users/getUsers', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': 'Bearer ' + token ,// Inclure le JWT
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Échec de la requête: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log(data); // Inspecter la réponse
-    
-                    // Vérifier si la réponse est un tableau
-                    if (Array.isArray(data)) {
-                        const userListElement = document.getElementById('userList');
-                        data.forEach(user => {
-                            const userElement = document.createElement('div');
-                            userElement.innerText = user.username;
-                            userListElement.appendChild(userElement);
-                        });
-                    } else {
-                        console.error('La réponse n\'est pas un tableau:', data);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                });
-            }
+});
+
+function loadUsers(token) {
+    fetch('http://localhost:3000/api/users/getUsers', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de la requête: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(users => {
+        const userListElement = document.getElementById('userList');
+        userListElement.innerHTML = '';
+        users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.innerText = user.username;
+            userListElement.appendChild(userElement);
         });
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
+function loadMessages(token) {
+    fetch('http://localhost:3000/api/users/getMessages', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de la requête: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(messages => {
+        const messageList = document.getElementById('messageList');
+        messageList.innerHTML = '';
+        messages.forEach(message => {
+            const messageElement = document.createElement('div');
+            // Ajouter une classe CSS en fonction de l'expéditeur du message
+            messageElement.classList.add('message');
+            if (message.isCurrentUser) {
+                messageElement.classList.add('sent');
+            } else {
+                messageElement.classList.add('received');
+            }
+            messageElement.textContent = `${message.sender.username}: ${message.content}`;
+            messageList.appendChild(messageElement);
+        });
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
+function sendMessage() {
+    const messageContent = document.getElementById('messageInput').value;
+    const token = localStorage.getItem('jwtToken');
+
+    fetch('http://localhost:3000/api/users/sendMessage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ content: messageContent })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de l\'envoi du message: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Message envoyé:', data);
+        document.getElementById('messageInput').value = '';
+        loadMessages(token);
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
     </script>
     
 </body>

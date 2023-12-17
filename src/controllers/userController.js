@@ -39,6 +39,7 @@ exports.register = async (req, res) => {
         res.json({
             message: "Connexion réussie",
             user: {
+                id: user._id,
                 username: user.username,
                 // Autres informations utilisateur nécessaires
             },
