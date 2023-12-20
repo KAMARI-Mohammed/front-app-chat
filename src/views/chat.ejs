@@ -24,20 +24,32 @@
     overflow-y: auto;
 }
 
+#messageList {
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Assurez-vous que la liste des messages utilise toute la largeur disponible */
+}
+
 .message {
-    margin: 5px 0;
-    padding: 5px;
-    border-radius: 10px;
+    display: block;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    max-width: 80%; /* Maximum width for messages to avoid stretching across the full width */
 }
 
 .sent {
-    background-color: #e0f7fa;
-    align-self: flex-end;
+    background-color: #DCF8C6; /* Couleur de fond pour les messages envoyés */
+    margin-left: auto; /* Aligner à droite */
+    margin-right: 0;
 }
 
 .received {
-    background-color: #f0f4c3;
+    background-color: #ECECEC; /* Couleur de fond pour les messages reçus */
+    margin-right: auto; /* Aligner à gauche */
+    margin-left: 0;
 }
+
 
 #messageInpu {
     width: 20%;
@@ -64,12 +76,63 @@
     background-color: #45a049;
 }
 
+#privateChatContainer {
+    display: none; /* initialement caché */
+    flex-direction: column;
+    width: 100%;
+    background-color: #45a049;
+}
+
+#privateChatHeader {
+    background-color: #f2f2f2; /* ou la couleur de votre choix */
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+#privateMessageList {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: white;
+}
+
+#privateMessageInput {
+    width: 80%;
+    padding: 5px;
+    margin: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    width: 15%;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
 
 
     </style>
 </head>
 <body>
     <div id="chatContainer">
+<!-- Conteneur pour le chat privé, initialement caché -->
+<div id="loading" style="display: none;">Chargement...</div>
+<div id="error" style="display: none; color: red;"></div>
+<div id="privateChatContainer" style="display: flex;">
+    <div id="privateChatHeader"></div>
+    <div id="privateMessageList">Messages privés chargés ici...</div>
+    <textarea id="privateMessageInput" placeholder="Tapez un message privé ici..."></textarea>
+    <button onclick="sendPrivateMessage()">Envoyer Message Privé</button>
+</div>
 
         <!-- Élément pour afficher le nom de l'utilisateur connecté -->
     <div id="usernameDisplay"></div>
@@ -83,8 +146,6 @@
         <div id="chatBox">
             <!-- Messages seront affichés ici -->
             <div id="messageList">Messages chargés ici...</div>
-            <div class="message sent">Hello!</div>
-            <div class="message received">Hi there!</div>
             <!-- Plus de messages -->
         </div>
         <div id="messageInpu">
@@ -92,19 +153,18 @@
                 <input type="text" id="messageInput" />
                 <button id="sendButton" type="submit">Envoyer</button>
             </form>
-            
-            
         </div>
     </div>
+    
 
     <script>
+        const username = localStorage.getItem('username');
         function setupMessagePolling(token) {
     setInterval(() => {
-        loadMessages(token);
+        loadMessages(token,username);
     }, 3000); // Met à jour les messages toutes les 3 secondes
 }
      document.addEventListener('DOMContentLoaded', () => {
-    const username = localStorage.getItem('username');
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('jwtToken');
 
@@ -115,7 +175,7 @@
         return;
     }
     loadUsers(token);
-    loadMessages(token);
+    loadMessages(token,username);
     setupMessagePolling(token); // Démarre le polling
     if (username) {
         document.getElementById('usernameDisplay').innerText = username;
@@ -124,7 +184,9 @@
     
 });
 
+let currentChatPartner = null;
 function loadUsers(token) {
+    showLoading(true);
     fetch('http://localhost:3000/api/users/getUsers', {
         method: 'GET',
         headers: {
@@ -144,13 +206,22 @@ function loadUsers(token) {
         users.forEach(user => {
             const userElement = document.createElement('div');
             userElement.innerText = user.username;
+            userElement.onclick = () => openPrivateChat(user.username); // Nouvelle fonction à créer
             userListElement.appendChild(userElement);
         });
     })
-    .catch(error => console.error('Erreur:', error));
+    .catch(error => {
+        console.error('Erreur:', error);
+        showError('Erreur lors du chargement des utilisateurs.');
+    })
+    .finally(() => {
+        showLoading(false);
+    });
 }
 
-function loadMessages(token) {
+
+
+function loadMessages(token, currentUsername) {
     fetch('http://localhost:3000/api/users/getMessages', {
         method: 'GET',
         headers: {
@@ -170,7 +241,7 @@ function loadMessages(token) {
             const messageElement = document.createElement('div');
             // Ajouter une classe CSS en fonction de l'expéditeur du message
             messageElement.classList.add('message');
-            if (message.isCurrentUser) {
+            if (message.sender.username === currentUsername) { // Vérifiez si le message provient de l'utilisateur actuel
                 messageElement.classList.add('sent');
             } else {
                 messageElement.classList.add('received');
@@ -178,9 +249,11 @@ function loadMessages(token) {
             messageElement.textContent = `${message.sender.username}: ${message.content}`;
             messageList.appendChild(messageElement);
         });
+        messageList.scrollTop = messageList.scrollHeight; // Fait défiler vers le bas pour voir les nouveaux messages
     })
     .catch(error => console.error('Erreur:', error));
 }
+
 
 function sendMessage() {
     const messageContent = document.getElementById('messageInput').value;
@@ -203,9 +276,134 @@ function sendMessage() {
     .then(data => {
         console.log('Message envoyé:', data);
         document.getElementById('messageInput').value = '';
-        loadMessages(token);
+        loadMessages(token,username);
     })
     .catch(error => console.error('Erreur:', error));
+}
+
+//// Private chat start 
+let activeChatPartner = null;
+let conversations = {}; // Stocke les états des conversations
+
+function openPrivateChat(username) {
+    activeChatPartner = username;
+    currentChatPartner = username;
+    updateChatUI(); // Mettez à jour l'interface utilisateur avec la conversation active
+}
+
+
+/*function openPrivateChat(username) {
+    console.log('Ouverture du chat privé avec:', username); // Pour le débogage
+    currentChatPartner = username;
+    document.getElementById('privateChatContainer').style.display = 'block';
+    document.getElementById('chatContainer').style.display = 'none';
+    document.getElementById('privateChatHeader').innerText = `Chat privé avec ${username}`;
+    loadPrivateMessages();
+}*/
+
+
+
+// Fonction pour charger les messages privés avec un utilisateur spécifique
+function loadPrivateMessages() {
+    if (!currentChatPartner) {
+        console.error('Aucun partenaire de chat défini');
+        return;
+    }
+    if (!conversations[username]) {
+        conversations[username] = []; // Initialisez si pas encore chargé
+    }
+    const token = localStorage.getItem('jwtToken');
+    fetch(`http://localhost:3000/api/users/getPrivateMessages/${currentChatPartner}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+        
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de la requête: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(messages => {
+        conversations[username] = messages; // Stockez les messages dans l'état
+        if (username === activeChatPartner) {
+            updateChatUI(); // Mettez à jour l'UI si la conversation est active
+        }
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+function updateChatUI() {
+    const privateMessageList = document.getElementById('privateMessageList');
+    privateMessageList.innerHTML = '';
+    const messages = conversations[activeChatPartner];
+    if (messages) {
+        messages.forEach(message => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.textContent = `${message.sender.username}: ${message.content}`;
+            privateMessageList.appendChild(messageElement);
+        });
+        privateMessageList.scrollTop = privateMessageList.scrollHeight;
+    }
+    document.getElementById('privateChatHeader').innerText = `Chat privé avec ${activeChatPartner}`;
+}
+
+// Fonction pour envoyer un message privé
+function sendPrivateMessage() {
+    if (!currentChatPartner) {
+        alert("Aucun partenaire de chat sélectionné");
+        return;
+    }
+
+    const messageContent = document.getElementById('privateMessageInput').value;
+    const token = localStorage.getItem('jwtToken');
+
+    if (!messageContent.trim()) {
+        alert("Le message ne peut pas être vide");
+        return;
+    }
+
+    fetch('http://localhost:3000/api/users/sendPrivateMessage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+            receiverUsername: currentChatPartner, 
+            content: messageContent 
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Échec de l\'envoi du message: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('privateMessageInput').value = '';
+        loadPrivateMessages(currentChatPartner);
+        alert("Message privé envoyé avec succès !");
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert("Erreur lors de l'envoi du message.");
+    });
+}
+
+
+
+
+function showError(message) {
+    const errorDiv = document.getElementById('error');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+function showLoading(isLoading) {
+    const loadingDiv = document.getElementById('loading');
+    loadingDiv.style.display = isLoading ? 'block' : 'none';
 }
 
     </script>

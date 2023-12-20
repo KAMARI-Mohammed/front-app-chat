@@ -10,6 +10,11 @@ const messageSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    receiver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+  },
+  // ... au
     // Autres champs comme la date d'envoi, etc.
 });
 

@@ -8,7 +8,8 @@ const verifyToken = require('../middleware/authMiddleware');
 router.get('/getUsers', verifyToken, userController.getUsers);
 router.get('/getMessages',verifyToken, messageController.getMessages);
 router.post('/sendMessage',verifyToken, messageController.sendMessage);
-
+router.post('/sendPrivateMessage',verifyToken, messageController.sendPrivateMessage);
+router.get('/getPrivateMessages/:partnerUsername',verifyToken, messageController.getPrivateMessages);
 router.post('/login', userController.login);
 
 
